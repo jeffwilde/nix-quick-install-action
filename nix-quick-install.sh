@@ -3,10 +3,21 @@
 set -eu
 set -o pipefail
 
+if [[ "${VERBOSE:-0}" -eq 1 ]]; then
+  set -x 
+fi
+
+SUDO="$(which sudo 2>/dev/null)"
+
+# if the user env var is unset and 
+if [[ -z "${USER:-}" ]] && [[ "$EUID" -eq 0 ]]; then
+    USER="root"
+fi
+
 # Create user-writeable /nix
 if [[ $OSTYPE =~ darwin ]]; then
   sys="x86_64-darwin"
-  sudo $SHELL -euo pipefail << EOF
+  $SUDO $SHELL -euo pipefail << EOF
   echo nix >> /etc/synthetic.conf
   echo -e "run\\tprivate/var/run" >> /etc/synthetic.conf
   /System/Library/Filesystems/apfs.fs/Contents/Resources/apfs.util -B || true
@@ -16,9 +27,9 @@ if [[ $OSTYPE =~ darwin ]]; then
 EOF
 else
   sys="x86_64-linux"
-  sudo install -d -o "$USER" /nix
+  $SUDO install -d -o "$USER" /nix
   if [[ "$NIX_ON_TMPFS" == "true" || "$NIX_ON_TMPFS" == "True" || "$NIX_ON_TMPFS" == "TRUE" ]]; then
-    sudo mount -t tmpfs -o size=90%,mode=0755,gid="$(id -g)",uid="$(id -u)" tmpfs /nix
+    $SUDO mount -t tmpfs -o size=90%,mode=0755,gid="$(id -g)",uid="$(id -u)" tmpfs /nix
   fi
 fi
 
@@ -30,10 +41,11 @@ curl -sL --retry 3 --retry-connrefused "$url" | zstdcat | \
   tar --strip-components 1 -xC /nix
 
 # Setup nix.conf
+NIX_CONF_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/nix/nix.conf"
+mkdir -p "$(dirname "$NIX_CONF_FILE")"
+echo "build-users-group =" > "$NIX_CONF_FILE"
 if [ -n "$NIX_CONF" ]; then
-  NIX_CONF_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/nix/nix.conf"
-  mkdir -p "$(dirname "$NIX_CONF_FILE")"
-  printenv NIX_CONF > "$NIX_CONF_FILE"
+  printenv NIX_CONF >> "$NIX_CONF_FILE"
 fi
 
 # Install nix in profile
