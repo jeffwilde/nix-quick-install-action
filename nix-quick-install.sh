@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+bash --version
+
 echo "------------------------------------------------"
 echo "------------------------------------------------"
 env 
@@ -20,7 +22,7 @@ if [[ "${VERBOSE:-0}" -eq 1 ]]; then
   set -x 
 fi
 
-[[ -z "${SUDO:-}"]] || SUDO="$(which sudo 2>/dev/null || true)"
+[[ -z "${SUDO:-}" ]] || SUDO="$(which sudo 2>/dev/null || true)"
 
 # if the user env var is unset and 
 if [[ -z "${USER:-}" ]] && [[ "$EUID" -eq 0 ]]; then
