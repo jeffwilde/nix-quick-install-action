@@ -20,7 +20,7 @@ if [[ "${VERBOSE:-0}" -eq 1 ]]; then
   set -x 
 fi
 
-SUDO="$(which sudo 2>/dev/null)"
+[[ -z "${SUDO:-}"]] || SUDO="$(which sudo 2>/dev/null || true)"
 
 # if the user env var is unset and 
 if [[ -z "${USER:-}" ]] && [[ "$EUID" -eq 0 ]]; then
@@ -46,19 +46,19 @@ else
   fi
 fi
 
-CURL="$(which curl 2>/dev/null)"
-NODE="$(which node 2>/dev/null || which nodejs 2>/dev/null)"
+[[ -z "${CURL:-}" ]] || CURL="$(which curl 2>/dev/null || true)"
+[[ -z "${NODE:-}" ]] || NODE="$(which node 2>/dev/null || which nodejs 2>/dev/null || true)"
 
 # Fetch and unpack nix
 rel="$(head -n1 "$RELEASE_FILE")"
 url="${NIX_ARCHIVES_URL:-https://github.com/nixbuild/nix-quick-install-action/releases/download/$rel}/nix-$NIX_VERSION-$sys.tar.zstd"
 (
   if [[ ! -z "$CURL" ]]; then
-    curl -sL --retry 3 --retry-connrefused "$url"
+    $CURL -sL --retry 3 --retry-connrefused "$url"
   elif [[ ! -z "$NODE" ]]; then
-    node download "$url" /dev/stdout
+    $NODE download "$url" /dev/stdout
   else
-    echo "error: could not find curl or nodejs commands, unable to download the the nix installer"
+    echo "error: could not find curl or nodejs commands, unable to download the the nix installer" > /dev/stderr
     exit 1
   fi
 ) | zstdcat |  tar --strip-components 1 -xC /nix
