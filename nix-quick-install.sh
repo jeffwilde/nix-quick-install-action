@@ -22,11 +22,13 @@ if [[ "${VERBOSE:-0}" -eq 1 ]]; then
   set -x 
 fi
 
+SCRIPT_DIR="$(dirname -- "$(readlink -f -- "$BASH_SOURCE")")"
+
 [[ -z "${SUDO:-}" ]] && SUDO="$(which sudo 2>/dev/null || true)"
 
 # if the user env var is unset and 
-if [[ -z "${USER:-}" ]] && [[ "$EUID" -eq 0 ]]; then
-    USER="root"
+if [[ -z "${USER:-}" ]]; then
+    USER="$( getent passwd "$UID" | cut -d: -f1 )"
 fi
 
 # Create user-writeable /nix
@@ -50,6 +52,7 @@ fi
 
 [[ -z "${CURL:-}" ]] && CURL="$(which curl 2>/dev/null || true)"
 [[ -z "${NODE:-}" ]] && NODE="$(which node 2>/dev/null || which nodejs 2>/dev/null || true)"
+[[ -z "${ZCAT:-}" ]] && ZCAT="$(which zstdcat 2>/dev/null || echo cat )"
 
 # Fetch and unpack nix
 rel="$(head -n1 "$RELEASE_FILE")"
@@ -58,12 +61,12 @@ url="${NIX_ARCHIVES_URL:-https://github.com/nixbuild/nix-quick-install-action/re
   if [[ ! -z "$CURL" ]]; then
     $CURL -sL --retry 3 --retry-connrefused "$url"
   elif [[ ! -z "$NODE" ]]; then
-    $NODE download "$url" /dev/stdout
+    $NODE "${SCRIPT_DIR}/download.js" "$url" /dev/stdout
   else
     echo "error: could not find curl or nodejs commands, unable to download the the nix installer" > /dev/stderr
     exit 1
   fi
-) | zstdcat |  tar --strip-components 1 -xC /nix
+) | $ZCAT |  tar --strip-components 1 -xC /nix
 
 
 # Setup nix.conf
