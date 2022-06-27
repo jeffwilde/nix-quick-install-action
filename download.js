@@ -2,7 +2,6 @@
 
 const https = require("https");
 const fs = require("fs");
-const { default: nodeTest } = require("node:test");
 
 const { argv } = process;
 const [, , url, path] = argv;
