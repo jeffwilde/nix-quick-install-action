@@ -22,7 +22,7 @@ if [[ "${VERBOSE:-0}" -eq 1 ]]; then
   set -x 
 fi
 
-[[ -z "${SUDO:-}" ]] || SUDO="$(which sudo 2>/dev/null || true)"
+[[ -z "${SUDO:-}" ]] && SUDO="$(which sudo 2>/dev/null || true)"
 
 # if the user env var is unset and 
 if [[ -z "${USER:-}" ]] && [[ "$EUID" -eq 0 ]]; then
@@ -48,8 +48,8 @@ else
   fi
 fi
 
-[[ -z "${CURL:-}" ]] || CURL="$(which curl 2>/dev/null || true)"
-[[ -z "${NODE:-}" ]] || NODE="$(which node 2>/dev/null || which nodejs 2>/dev/null || true)"
+[[ -z "${CURL:-}" ]] && CURL="$(which curl 2>/dev/null || true)"
+[[ -z "${NODE:-}" ]] && NODE="$(which node 2>/dev/null || which nodejs 2>/dev/null || true)"
 
 # Fetch and unpack nix
 rel="$(head -n1 "$RELEASE_FILE")"
