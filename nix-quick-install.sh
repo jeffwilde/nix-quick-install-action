@@ -39,12 +39,23 @@ else
   fi
 fi
 
+CURL="$(which curl 2>/dev/null)"
+NODE="$(which node 2>/dev/null || which nodejs 2>/dev/null)"
+
 # Fetch and unpack nix
 rel="$(head -n1 "$RELEASE_FILE")"
 url="${NIX_ARCHIVES_URL:-https://github.com/nixbuild/nix-quick-install-action/releases/download/$rel}/nix-$NIX_VERSION-$sys.tar.zstd"
+(
+  if [[ ! -z "$CURL" ]]; then
+    curl -sL --retry 3 --retry-connrefused "$url"
+  elif [[ ! -z "$NODE" ]]; then
+    node download "$url" /dev/stdout
+  else
+    echo "error: could not find curl or nodejs commands, unable to download the the nix installer"
+    exit 1
+  fi
+) | zstdcat |  tar --strip-components 1 -xC /nix
 
-curl -sL --retry 3 --retry-connrefused "$url" | zstdcat | \
-  tar --strip-components 1 -xC /nix
 
 # Setup nix.conf
 NIX_CONF_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/nix/nix.conf"
